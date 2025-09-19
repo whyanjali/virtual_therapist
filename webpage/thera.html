@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood-Based Virtual Therapist</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #32896c 0%, #a4c9c0 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            height: 500px;
+        }
+        
+        .mood-selector {
+            width: 200px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-right: 1px solid #eaeaea;
+        }
+        
+        .mood-selector h3 {
+            margin-bottom: 15px;
+            color: #99c3b5;
+            text-align: center;
+        }
+        
+        .mood-btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 8px;
+            background-color: #e8f5e9;
+            color: #dfeb00ea;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .mood-btn:hover {
+            background-color: #c8e6c9;
+            transform: translateX(5px);
+        }
+        
+        .mood-btn.active {
+            background-color: #4caf50;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #fafafa;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+        }
+        
+        .user-message {
+            justify-content: flex-end;
+        }
+        
+        .therapist-message {
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-message .message-content {
+            background: linear-gradient(135deg, #5b8e7d 0%, #4a7c6d 100%);
+            color: white;
+            border-top-right-radius: 5px;
+        }
+        
+        .therapist-message .message-content {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+            color: #333;
+            border-top-left-radius: 5px;
+        }
+        
+        .input-area {
+            display: flex;
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background-color: white;
+        }
+        
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #5b8e7d 0%, #4a7c6d 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 15px 25px;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            background: linear-gradient(135deg, #4a7c6d 0%, #396a5b 100%);
+            transform: translateY(-2px);
+        }
+        
+        .disclaimer {
+            padding: 15px;
+            font-size: 12px;
+            text-align: center;
+            color: #777;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+        
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            color: #888;
+            font-style: italic;
+        }
+        
+        .suggestion-chip {
+            display: inline-block;
+            background-color: #e8f5e9;
+            color: #388e3c;
+            padding: 8px 15px;
+            border-radius: 18px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .suggestion-chip:hover {
+            background-color: #c8e6c9;
+            transform: translateY(-2px);
+        }
+        
+        .suggestions {
+            padding: 10px 20px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eaeaea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Mood-Based Virtual Therapist</h1>
+            <p>I'm here to listen and help you reflect on your feelings</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="mood-selector">
+                <h3>How are you feeling?</h3>
+                <button class="mood-btn" onclick="setMood('sadness')">😔 Sadness</button>
+                <button class="mood-btn" onclick="setMood('anxiety')">😰 Anxiety</button>
+                <button class="mood-btn" onclick="setMood('anger')">😠 Anger</button>
+                <button class="mood-btn" onclick="setMood('grief')">💔 Grief</button>
+                <button class="mood-btn" onclick="setMood('loneliness')">�️ Loneliness</button>
+                <button class="mood-btn" onclick="setMood('happiness')">😊 Happiness</button>
+            </div>
+            
+            <div class="chat-container">
+                <div class="chat-messages" id="chat">
+                    <div class="message therapist-message">
+                        <div class="message-content">
+                            Hello, I'm your virtual therapist. How are you feeling today? You can select your mood on the left or just start typing.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="suggestions">
+                    <div class="suggestion-chip" onclick="quickMessage('I feel like no one cares about me.')">I feel uncared for</div>
+                    <div class="suggestion-chip" onclick="quickMessage('I\'m so nervous about my exam tomorrow.')">I'm anxious about something</div>
+                    <div class="suggestion-chip" onclick="quickMessage('I\'m so frustrated with my boss!')">I'm frustrated at work</div>
+                </div>
+                
+                <div class="input-area">
+                    <input type="text" id="user-input" placeholder="Type your thoughts here..." autocomplete="off">
+                    <button onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typing">Therapist is typing...</div>
+        
+        <div class="disclaimer">
+            Disclaimer: This is a basic virtual assistant, not a replacement for professional therapy. If you're in crisis, please contact a licensed mental health professional or emergency services.
+        </div>
+    </div>
+
+    <script>
+        let currentMood = '';
+        let conversationHistory = [];
+        
+        // Set the current mood
+        function setMood(mood) {
+            currentMood = mood;
+            
+            // Update button styles
+            document.querySelectorAll('.mood-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Add a message about the selected mood
+            addMessage(`I've selected ${mood} as my current mood.`, true);
+            
+            // Generate an appropriate response based on mood
+            setTimeout(() => {
+                let response = '';
+                switch(mood) {
+                    case 'sadness':
+                        response = "I see you're feeling sad. It takes courage to acknowledge these feelings. Would you like to talk more about what's causing your sadness?";
+                        break;
+                    case 'anxiety':
+                        response = "I notice you're feeling anxious. It's completely normal to feel this way sometimes. Would it help to talk about what's making you anxious?";
+                        break;
+                    case 'anger':
+                        response = "I understand you're feeling angry. These feelings are valid. Would you like to discuss what's causing your frustration?";
+                        break;
+                    case 'grief':
+                        response = "I'm here to support you through your grief. Losing someone or something important is incredibly difficult. Would you like to share more?";
+                        break;
+                    case 'loneliness':
+                        response = "I hear that you're feeling lonely. That can be really tough. Remember that I'm here to listen whenever you need to talk.";
+                        break;
+                    case 'happiness':
+                        response = "It's wonderful that you're feeling happy! Would you like to share what's bringing you joy today?";
+                        break;
+                }
+                addMessage(response, false);
+            }, 1000);
+        }
+        
+        // Add a message to the chat
+        function addMessage(message, isUser) {
+            const chat = document.getElementById('chat');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = isUser ? 'message user-message' : 'message therapist-message';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = message;
+            
+            messageDiv.appendChild(contentDiv);
+            chat.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            chat.scrollTop = chat.scrollHeight;
+            
+            // Add to conversation history
+            conversationHistory.push({
+                role: isUser ? 'user' : 'therapist',
+                message: message
+            });
+        }
+        
+        // Show typing indicator
+        function showTyping() {
+            const typingIndicator = document.getElementById('typing');
+            typingIndicator.style.display = 'block';
+            const chat = document.getElementById('chat');
+            chat.scrollTop = chat.scrollHeight;
+        }
+        
+        // Hide typing indicator
+        function hideTyping() {
+            const typingIndicator = document.getElementById('typing');
+            typingIndicator.style.display = 'none';
+        }
+        
+        // Generate therapist response based on user message and mood
+        function generateResponse(userMessage) {
+            // Convert to lowercase for easier matching
+            const lowerMessage = userMessage.toLowerCase();
+            
+            // Check for specific mood-related phrases
+            if (lowerMessage.includes('no one cares') || lowerMessage.includes('feel alone') || lowerMessage.includes('uncared for')) {
+                return "I'm really sorry you're feeling this way. It sounds very painful to feel uncared for. You're not alone—I'm here listening.";
+            }
+            
+            if (lowerMessage.includes('nervous') || lowerMessage.includes('anxious') || lowerMessage.includes('exam') || lowerMessage.includes('test')) {
+                return "It makes sense you're anxious—exams can be stressful. You've worked hard, and it's okay to feel this way.";
+            }
+            
+            if (lowerMessage.includes('frustrated') || lowerMessage.includes('boss') || lowerMessage.includes('angry') || lowerMessage.includes('mad')) {
+                return "That sounds tough. It's hard to feel unheard or mistreated at work. Your feelings are completely valid.";
+            }
+            
+            if (lowerMessage.includes('lost') || lowerMessage.includes('grandmother') || lowerMessage.includes('grief') || lowerMessage.includes('passed away')) {
+                return "I'm so sorry for your loss. Losing someone close can feel overwhelming. It's okay to take time to grieve.";
+            }
+            
+            if (lowerMessage.includes('no one to talk') || lowerMessage.includes('lonely') || lowerMessage.includes('alone')) {
+                return "That must feel really isolating. Reaching out like this shows courage—you don't have to go through it alone.";
+            }
+            
+            if (lowerMessage.includes('new job') || lowerMessage.includes('happy') || lowerMessage.includes('excited') || lowerMessage.includes('good news')) {
+                return "That's wonderful news! You must feel proud and excited—congratulations!";
+            }
+            
+            // If no specific mood detected but we have a current mood set
+            if (currentMood) {
+                switch(currentMood) {
+                    case 'sadness':
+                        return "Thank you for sharing that with me. It's okay to feel sad sometimes. Would you like to talk more about what's been on your mind?";
+                    case 'anxiety':
+                        return "I appreciate you telling me about this. Anxiety can be overwhelming. Would it help to break down what's worrying you into smaller parts?";
+                    case 'anger':
+                        return "I hear your frustration. It's completely valid to feel angry when things seem unfair. Would you like to explore healthy ways to express these feelings?";
+                    case 'grief':
+                        return "Thank you for trusting me with your feelings. Grief is a natural response to loss. Would it help to share a favorite memory?";
+                    case 'loneliness':
+                        return "I understand that lonely feeling. It takes courage to reach out. What's something you enjoy doing that might help you connect with others?";
+                    case 'happiness':
+                        return "I'm glad to hear you're feeling happy! Celebrating good moments is important. Would you like to share what's bringing you joy?";
+                }
+            }
+            
+            // Default empathetic responses
+            const defaultResponses = [
+                "I appreciate you sharing that with me. How does that make you feel?",
+                "Thank you for opening up. Can you tell me more about that?",
+                "I'm listening. What thoughts come up when you reflect on this?",
+                "That sounds challenging. How have you been coping with this?",
+                "I understand. What do you think would help in this situation?",
+                "Let's explore that further. What meaning does this have for you?",
+                "That's insightful. How long have you been feeling this way?",
+                "I hear you. What would you like to be different about this situation?",
+                "Thank you for trusting me with this. What's the hardest part about this for you?",
+                "I can see why that would be difficult. What support do you have in your life right now?"
+            ];
+            
+            // Return a random default response
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+        
+        // Send user message
+        function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const message = userInput.value.trim();
+            
+            if (message === '') return;
+            
+            // Add user message to chat
+            addMessage(message, true);
+            
+            // Clear input
+            userInput.value = '';
+            
+            // Show typing indicator
+            showTyping();
+            
+            // Generate and add therapist response after a short delay
+            setTimeout(() => {
+                hideTyping();
+                const response = generateResponse(message);
+                addMessage(response, false);
+            }, 1500);
+        }
+        
+        // Allow sending message with Enter key
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Quick message from suggestion chips
+        function quickMessage(message) {
+            document.getElementById('user-input').value = message;
+            sendMessage();
+        }
+    </script>
+</body>
+</html>
